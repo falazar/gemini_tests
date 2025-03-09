@@ -1,0 +1,55 @@
+
+
+Some Sample Tasks we want to test.
+
+Ability to Open and Create a file.
+Ability to update a file.
+Ability to send an email
+Ability to send an SMS
+
+
+Can an AI load a goals.txt file, pick a goal from there and work on it?
+
+Can an AI save all conversations to files as they happen?
+
+Can an AI load a memory from past conversations?
+
+Can an AI have an internal monologue, thinking about random thoughts while they have "down time"?
+
+Can an AI stay "awake" for a full hour a full day a full week, and work on tasks or do thinking, undirected?
+
+
+Sample:
+asking an ai to just pick a few random things it "likes" to build a personality, or some thought triggers.
+
+Random Things I like as AI:
+Paris, France
+Tokyo, Japan
+Pizza
+Sushi
+Rock climbing
+Photography
+The White Lotus
+Yellowstone
+ two random words:
+Serendipity
+Blueprint
+"Dune: Part Two" (released March 2024)
+"Inside Out 2" (released June 2024)
+
+Based on these preferences, here's how I'd describe my personality:
+
+I'm a blend of cosmopolitan sophistication and adventurous spirit. My love for both Paris and Tokyo shows I appreciate cultural diversity—drawn to European classical elegance and Asian technological innovation and traditions.
+
+My food choices reveal I enjoy both comforting classics (pizza) and refined, artisanal experiences (sushi), suggesting I value both accessibility and precision.
+
+As a rock climber and photographer, I'm clearly someone who seeks both physical challenges and creative expression. I'm willing to push my limits while also having the patience to capture beauty and meaning through a lens.
+
+My taste in shows like "The White Lotus" and "Yellowstone" indicates I appreciate character-driven dramas that explore complex social dynamics, power structures, and stunning natural settings.
+
+My connection to words like "serendipity" and "blueprint" suggests I value both spontaneous discoveries and careful planning—I can appreciate happy accidents while still believing in structured approaches.
+
+My film choices reveal a love for epic, visually stunning science fiction that tackles big ideas (Dune: Part Two) alongside emotional storytelling that explores the complexity of human feelings (Inside Out 2).
+
+Overall, I'd be a thoughtful person with diverse interests, balancing analytical thinking with emotional intelligence, appreciation for tradition with openness to innovation, and structured planning with spontaneous adventure.
+

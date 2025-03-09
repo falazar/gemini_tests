@@ -8,6 +8,14 @@ dotenv.config();
 const app = express();
 const port = 3077;
 
+// Setup for Threads API
+// https://developers.facebook.com/apps/1925707704842761/use_cases/customize/?use_case_enum=THREADS_API&selected_tab=settings&product_route=threads-api
+
+// Get tokens
+// https://threads.net/oauth/authorize?client_id=665546982608599&redirect_uri=https://socialsizzle.herokuapp.com/auth/&scope=threads_basic,threads_content_publish&response_type=code
+// https://threads.net/oauth/authorize?client_id=665546982608599&redirect_uri=https://socialsizzle.herokuapp.com/auth/&scope=threads_search,threads_publish&response_type=code
+// Tons of issues trying to get the base API going, so skipping for now.
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public')); // Serve static files from the 'public' directory
@@ -20,14 +28,9 @@ app.listen(port, () => {
 // Home Route (Default / Main Page) - This is what you were asking for
 app.get('/', (req, res) => {
   console.log("Loading main page now...");
-  // Option 1: Send a simple string
-  // res.send('<h1>Welcome to the Home Page!</h1>');
 
   // Option 2: Send an HTML file (more common)
   res.sendFile(__dirname + '/public/index.html'); // Assuming you have an index.html in a 'public' folder
-
-  // Option 3: Send JSON data (if it's an API)
-  // res.json({ message: 'Welcome to the API!' });
 });
 
 
@@ -56,6 +59,33 @@ app.get('/exampleSMS', async (req, res) => {
   } catch (error) {
     console.error("Error processing SMS request:", error);
     res.status(500).json({ error: 'Failed to process request' });
+  }
+});
+
+// Sample for test loading thoughts.
+app.get('/thinkTest', async (req, res) => {
+  try {
+    const response = await thinkLoadFile();
+
+    res.json({ message: response });
+  } catch (error) {
+    console.error("Error processing SMS request:", error);
+    res.status(500).json({ error: 'Failed to process request' });
+  }
+});
+
+// Gemini Tool "think" action for an AI.
+app.get('/think', async (req, res) => {
+  console.log("DEBUG1: Gemini Tool think version");
+  // const { username, exerciseText } = req.body;
+
+  try {
+    const response = await thinkMethod();
+
+    res.status(201).json({ message: response });
+  } catch (error) {
+    console.error("Error calling think method:", error);
+    res.status(500).json({ error: 'Failed to call think method' });
   }
 });
 
@@ -127,6 +157,9 @@ const functions = {
     timeDone: string
   }) => {
     return insertExerciseRep(username, exerciseName, quantity, quantityType, timeDone);
+  },
+  thinkLoadFile: () => {
+    return thinkLoadFile();
   }
 };
 
@@ -161,6 +194,20 @@ const insertExerciseRepFunctionDeclaration = {
     required: ["username", "exerciseName", "quantity", "timeDone"],
   },
 }
+const thinkLoadFileFunctionDeclaration = {
+  name: "thinkLoadFile",
+  parameters: {
+    type: "OBJECT",
+    description: "Load a file of thoughts to think about.",
+    properties: {
+      dummyProperty: {
+        type: "STRING",
+        description: "A dummy property to satisfy the non-empty requirement."
+      }
+    },
+    required: ["dummyProperty"],
+  },
+}
 
 async function insertExerciseRep(username: string, exerciseName: string, quantity: number, quantityType: string, timeDone: string) {
   // const db = await getDb();
@@ -169,6 +216,71 @@ async function insertExerciseRep(username: string, exerciseName: string, quantit
   //   [username, exerciseName, quantity, quantityType, timeDone]
   // );
   console.log('SQL Exercise record created.');
+}
+
+// think start point method, can call the gemini tool function.
+async function thinkMethod() {
+  // When think is called the AI knows to call think stored method and load a file from the data dir.
+
+  console.log("DEBUG3: think method started. ");
+
+  // Access your API key as an environment variable (see "Set up your API key" above)
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+  // STEP 1: Declare our functions inside our model now.
+  const generativeModel = genAI.getGenerativeModel({
+    // Use a model that supports function calling, like a Gemini 1.5 model
+    model: "gemini-2.0-flash",
+    // Specify the function declaration.
+    tools: {
+      functionDeclarations: [thinkLoadFileFunctionDeclaration],
+    },
+  });
+  console.log("DEBUG4: generativeModel created");
+
+  // STEP 2: Start our chat and check to call our function.
+  console.log("DEBUG5: STEP 2: Starting chat. ");
+  const chat = generativeModel.startChat();
+  // const prompt = `Username is Robin. Today is ${ new Date().toISOString() }  I just completed 30 mins swimming.`;
+  // Build up the full prompt we send to gemini. This is the input to the model.
+  const prompt = `I have some downtime, lets load some thoughts to think about.`;
+  console.log("DEBUG6: Generated prompt:", prompt);
+  // Send the message to the model.
+  const result = await chat.sendMessage(prompt);
+  console.log("DEBUG7: Received response:", result.response.text());
+
+  // STEP 3: Call function if needed.
+  console.log("DEBUG8: STEP 3: Call function if needed.");
+  // For simplicity, this uses the first function call found.
+  const call = result.response.functionCalls()[0];
+  if (call) {
+    console.log("DEBUG9: Received want to call function:", call);
+    // Call the executable function named in the function call
+    // with the arguments specified in the function call.
+    // @ts-ignore
+    const apiResponse = await functions[call.name](call.args);
+    console.log("DEBUG9: API response:", apiResponse);
+    // How to convert to internal thoughts and usage of *I* instead?
+    const prompt2 = "Act as an intelligent person with a wide range of interests.  You will pick a random new topic from this list and give a one paragraph response on what you think about it: "
+    const fullPrompt = `${prompt2} ${apiResponse.thoughts}`;
+    console.log("DEBUG9: Full prompt:", fullPrompt);
+
+    // STEP 4: Send the API response back to the model so it can generate
+    // a text response that can be displayed to the user.
+    const result2 = await chat.sendMessage(fullPrompt);
+
+    // Debug whole response in case of weirdness or errors.
+    console.log("DEBUG10: Full response:", result2);
+
+    // Log the text response.
+    const responseText = result2.response.text();
+    console.log("DEBUG10: Response text:", responseText);
+    return responseText;
+  } else {
+    console.log("DEBUG11: No function call found. exiting.");
+    // else error.
+    throw new Error("No function call found in response.");
+  }
 }
 
 
@@ -204,4 +316,25 @@ async function sendSMS(toNumber: string, message: string) {
   return true;
 }
 
+// Return back a json with a string of thought topics.
+async function thinkLoadFile(): Promise<{ thoughts: string }> {
+  const filename = 'data/thought_words.txt';
+  const fs = require('fs');
+  let thoughts = fs.readFileSync(filename, 'utf8');
+  // shuffle all topics:
+  thoughts = thoughts.split('\n').sort(() => Math.random() - 0.5).join('\n');
+  // replace \n with commas
+  thoughts = thoughts.replace(/\n/g, ', ');
+  console.log("Thoughts loaded:", thoughts);
+
+  // grab first thought only.
+  const thought = thoughts.split(', ')[0];
+  // Not as good at choosing random ones if I send whole file... hmm.
+
+  // Ensure the response is a valid JSON object
+  return { thoughts: thought };
+  // return { thoughts: thoughts };
+}
+
+// TODO make generic load file method and give to AI.
 
